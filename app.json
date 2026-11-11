@@ -34,7 +34,8 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "@react-native-vector-icons/ionicons"
+      "@react-native-vector-icons/ionicons",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
