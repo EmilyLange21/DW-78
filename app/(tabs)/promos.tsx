@@ -21,6 +21,7 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 }
 
 export default function PantallaPromos() {
+  const esComercio = true; // reemplazar por el rol de la sesión (parte de Axel)
   const [estado, setEstado] = useState<EstadoPromos>("vigentes");
   const [promos, setPromos] = useState<Promocion[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -53,6 +54,12 @@ export default function PantallaPromos() {
 
   return (
     <View style={estilos.pantalla}>
+      {esComercio && (                                                        
+        <Pressable style={estilos.botonComercio} onPress={() => router.push("/validar")}>
+          <Text style={estilos.textoBoton}>Escanear código de cliente</Text>
+        </Pressable>
+      )}
+
       <View style={estilos.filtros}>
         {OPCIONES_ESTADO.map((opcion) => (
           <Chip
@@ -133,6 +140,7 @@ const estilos = StyleSheet.create({
   pantalla: { flex: 1 },
   filtros: { flexDirection: "row", gap: 8, padding: 12 },
   filaRubros: { flexGrow: 0, flexShrink: 0 },
+  botonComercio: { marginHorizontal: 12, marginTop: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: "#d97706", alignItems: "center"},
   chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#8885" },
   chipActivo: { backgroundColor: "#2f95dc", borderColor: "#2f95dc" },
   textoChip: { fontSize: 14 },

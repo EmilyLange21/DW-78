@@ -30,3 +30,7 @@ export async function generarCodigo(promocionId: string): Promise<UsoDePromocion
 export function listarMisUsos(): Promise<Respuesta<UsoDePromocion[]>> {
     return api.get<UsoDePromocion[]>("/yo/usos");
 }
+
+export async function validarCodigo(codigo: string): Promise<UsoDePromocion> {
+    return (await api.post<UsoDePromocion>("/mi-comercio/usos/validar", { codigo })).datos;
+}
