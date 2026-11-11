@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-nati
 import { Text, View } from "../../components/Themed";
 import { obtenerComercio } from "../../src/servicios/comercios";
 import { generarCodigo, obtenerPromocion } from "../../src/servicios/promociones";
+import CodigoQr from "../../src/componentes/CodigoQr";
 import type { Comercio, Promocion, UsoDePromocion } from "../../src/tipos";
 
 
@@ -91,6 +92,7 @@ export default function DetallePromocion() {
           {uso ? (
             <View style={estilos.cajaCodigo}>
               <Text>Mostrá este código en el comercio</Text>
+              <CodigoQr valor={uso.codigo} />
               <Text style={estilos.codigo}>{uso.codigo}</Text>
             </View>
           ) : (
@@ -112,15 +114,16 @@ const estilos = StyleSheet.create({
   centro: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   mensaje: { fontSize: 16, textAlign: "center", marginTop: 12 },
   contenido: { padding: 16, gap: 8 },
-  titulo: { fontSize: 22, fontWeight: "700" },
+  titulo: { fontSize: 22, fontWeight: "700", textAlign: "center" },
   comercio: { fontSize: 16, opacity: 0.8 },
-  descuento: { fontSize: 18, fontWeight: "600", color: "#2f95dc" },
-  exclusiva: { fontSize: 13, fontWeight: "600", color: "#d97706" },
+  descuento: { fontSize: 18, fontWeight: "600", color: "#069f25" },
+  exclusiva: { fontSize: 13, fontWeight: "600", color: "#d86705" },
   subtitulo: { fontSize: 16, fontWeight: "600", marginTop: 12 },
   fecha: { fontSize: 13, opacity: 0.7, marginTop: 8 },
-  boton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: "#2f95dc", alignItems: "center" },
+  boton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: "#0a8d3e", alignItems: "center" },
   textoBoton: { color: "#fff", fontWeight: "600" },
   cajaCodigo: { marginTop: 16, padding: 16, borderRadius: 10, borderWidth: 1, borderColor: "#8885", alignItems: "center", gap: 8 },
   codigo: { fontSize: 24, fontWeight: "700", letterSpacing: 2 },
   errorCodigo: { color: "#dc2626", marginTop: 8 },
 });
+
