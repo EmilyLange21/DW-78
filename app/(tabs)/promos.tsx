@@ -132,7 +132,7 @@ export default function PantallaPromos() {
 const estilos = StyleSheet.create({
   pantalla: { flex: 1 },
   filtros: { flexDirection: "row", gap: 8, padding: 12 },
-  filaRubros: { flexGrow: 0 },
+  filaRubros: { flexGrow: 0, flexShrink: 0 },
   chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#8885" },
   chipActivo: { backgroundColor: "#2f95dc", borderColor: "#2f95dc" },
   textoChip: { fontSize: 14 },
