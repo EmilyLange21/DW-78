@@ -34,6 +34,12 @@
           "backgroundColor": "#ffffff"
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Usamos tu ubicación para mostrarte los comercios que tenés cerca de donde estás."
+        }
+      ],
       "@react-native-vector-icons/ionicons",
       "expo-sqlite"
     ],
