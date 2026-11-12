@@ -60,6 +60,10 @@ export default function PantallaPromos() {
         </Pressable>
       )}
 
+      <Pressable style={estilos.botonGuardadas} onPress={() => router.push("/guardadas")}>
+        <Text style={estilos.textoGuardadas}>Mis promociones guardadas</Text>
+      </Pressable>
+
       <View style={estilos.filtros}>
         {OPCIONES_ESTADO.map((opcion) => (
           <Chip
@@ -140,7 +144,7 @@ const estilos = StyleSheet.create({
   pantalla: { flex: 1 },
   filtros: { flexDirection: "row", gap: 8, padding: 12 },
   filaRubros: { flexGrow: 0, flexShrink: 0 },
-  botonComercio: { marginHorizontal: 12, marginTop: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: "#d97706", alignItems: "center"},
+  botonComercio: { marginHorizontal: 12, marginTop: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: "#05a342", alignItems: "center"},
   chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#8885" },
   chipActivo: { backgroundColor: "#2f95dc", borderColor: "#2f95dc" },
   textoChip: { fontSize: 14 },
@@ -152,8 +156,10 @@ const estilos = StyleSheet.create({
   lista: { padding: 16, gap: 12 },
   tarjeta: { padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#8885", gap: 4 },
   titulo: { fontSize: 17, fontWeight: "700" },
-  descuento: { fontSize: 15, fontWeight: "600", color: "#2f95dc" },
+  descuento: { fontSize: 15, fontWeight: "600", color: "#05931a" },
   fecha: { fontSize: 13, opacity: 0.7 },
-  exclusiva: { fontSize: 13, fontWeight: "600", color: "#d97706" },
+  exclusiva: { fontSize: 13, fontWeight: "600", color: "#d86705" },
+  botonGuardadas: {marginHorizontal: 12, marginTop: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: "#2f95dc", alignItems: "center"},
+  textoGuardadas: { color: "#2f95dc", fontWeight: "600" },
 });
 

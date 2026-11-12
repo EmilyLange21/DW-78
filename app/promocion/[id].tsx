@@ -6,10 +6,15 @@ import { obtenerComercio } from "../../src/servicios/comercios";
 import { generarCodigo, obtenerPromocion } from "../../src/servicios/promociones";
 import CodigoQr from "../../src/componentes/CodigoQr";
 import type { Comercio, Promocion, UsoDePromocion } from "../../src/tipos";
+import { useSQLiteContext } from "expo-sqlite";
+import { estaGuardada, guardarPromo, quitarPromo, USUARIO_PROVISORIO } from "../../src/db/promosGuardadas";
 
 
 export default function DetallePromocion() {
     const { id } = useLocalSearchParams<{ id: string }>();
+    const db = useSQLiteContext();
+    const [guardada, setGuardada] = useState(false);
+    const [errorGuardada, setErrorGuardada] = useState<string | null>(null);
     const [promo, setPromo] = useState<Promocion | null>(null);
     const [comercio, setComercio] = useState<Comercio | null>(null);
     const [cargando, setCargando] = useState(true);
@@ -38,6 +43,12 @@ export default function DetallePromocion() {
         cargar();
     }, [cargar]);
 
+    useEffect(() => {
+      estaGuardada(db, USUARIO_PROVISORIO, id)
+      .then(setGuardada)
+      .catch(() => setGuardada(false));
+    }, [db, id]);
+
     async function pedirCodigo() {
         if (!promo) return;
         setGenerando(true);
@@ -50,6 +61,23 @@ export default function DetallePromocion() {
         } finally {
             setGenerando(false);
         }
+    }
+
+    async function alternarGuardada() {
+      if (!promo) return;
+      setErrorGuardada(null);
+
+      try {
+        if (guardada) {
+          await quitarPromo(db, USUARIO_PROVISORIO, promo.id);
+          setGuardada(false);
+        } else {
+          await guardarPromo(db, USUARIO_PROVISORIO, promo);
+          setGuardada(true);
+        }
+      } catch {
+        setErrorGuardada("No pudimos actualizar tus promociones guardadas.");
+      }
     }
 
     return (
@@ -89,6 +117,13 @@ export default function DetallePromocion() {
             {new Date(promo.hasta).toLocaleDateString("es-AR")}
           </Text>
 
+          <Pressable style={estilos.botonSecundario} onPress={alternarGuardada}>
+            <Text style={estilos.textoSecundario}>
+              {guardada ? "Quitar de guardadas" : "Guardar promoción"}
+            </Text>
+          </Pressable>
+          {errorGuardada && <Text style={estilos.errorCodigo}>{errorGuardada}</Text>}
+
           {uso ? (
             <View style={estilos.cajaCodigo}>
               <Text>Mostrá este código en el comercio</Text>
@@ -125,5 +160,7 @@ const estilos = StyleSheet.create({
   cajaCodigo: { marginTop: 16, padding: 16, borderRadius: 10, borderWidth: 1, borderColor: "#8885", alignItems: "center", gap: 8 },
   codigo: { fontSize: 24, fontWeight: "700", letterSpacing: 2 },
   errorCodigo: { color: "#dc2626", marginTop: 8 },
+  botonSecundario: {marginTop: 16, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: "#2f95dc", alignItems: "center"},
+  textoSecundario: { color: "#2f95dc", fontWeight: "600" },
 });
 
