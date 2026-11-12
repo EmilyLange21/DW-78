@@ -60,6 +60,12 @@ export default function PantallaPromos() {
         </Pressable>
       )}
 
+      {esComercio && (
+        <Pressable style={estilos.botonComercio} onPress={() => router.push("/mis-promos")}>
+          <Text style={estilos.textoBoton}>Administrar mis promociones</Text>
+        </Pressable>
+      )}
+
       <Pressable style={estilos.botonGuardadas} onPress={() => router.push("/guardadas")}>
         <Text style={estilos.textoGuardadas}>Mis promociones guardadas</Text>
       </Pressable>
