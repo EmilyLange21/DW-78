@@ -70,6 +70,10 @@ export default function PantallaPromos() {
         <Text style={estilos.textoGuardadas}>Mis promociones guardadas</Text>
       </Pressable>
 
+      <Pressable style={estilos.botonGuardadas} onPress={() => router.push("/mis-codigos")}>
+        <Text style={estilos.textoGuardadas}>Mis códigos</Text>
+      </Pressable>
+
       <View style={estilos.filtros}>
         {OPCIONES_ESTADO.map((opcion) => (
           <Chip
