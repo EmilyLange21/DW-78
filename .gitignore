@@ -42,3 +42,6 @@ yarn-error.*
 
 # archivos de IDE
 .idea/
+
+# archivos .apk
+*.apk
