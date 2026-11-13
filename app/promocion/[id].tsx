@@ -4,11 +4,17 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-nati
 import { Text, View } from "../../components/Themed";
 import { obtenerComercio } from "../../src/servicios/comercios";
 import { generarCodigo, obtenerPromocion } from "../../src/servicios/promociones";
+import CodigoQr from "../../src/componentes/CodigoQr";
 import type { Comercio, Promocion, UsoDePromocion } from "../../src/tipos";
+import { useSQLiteContext } from "expo-sqlite";
+import { estaGuardada, guardarPromo, quitarPromo, USUARIO_PROVISORIO } from "../../src/db/promosGuardadas";
 
 
 export default function DetallePromocion() {
     const { id } = useLocalSearchParams<{ id: string }>();
+    const db = useSQLiteContext();
+    const [guardada, setGuardada] = useState(false);
+    const [errorGuardada, setErrorGuardada] = useState<string | null>(null);
     const [promo, setPromo] = useState<Promocion | null>(null);
     const [comercio, setComercio] = useState<Comercio | null>(null);
     const [cargando, setCargando] = useState(true);
@@ -37,6 +43,12 @@ export default function DetallePromocion() {
         cargar();
     }, [cargar]);
 
+    useEffect(() => {
+      estaGuardada(db, USUARIO_PROVISORIO, id)
+      .then(setGuardada)
+      .catch(() => setGuardada(false));
+    }, [db, id]);
+
     async function pedirCodigo() {
         if (!promo) return;
         setGenerando(true);
@@ -49,6 +61,23 @@ export default function DetallePromocion() {
         } finally {
             setGenerando(false);
         }
+    }
+
+    async function alternarGuardada() {
+      if (!promo) return;
+      setErrorGuardada(null);
+
+      try {
+        if (guardada) {
+          await quitarPromo(db, USUARIO_PROVISORIO, promo.id);
+          setGuardada(false);
+        } else {
+          await guardarPromo(db, USUARIO_PROVISORIO, promo);
+          setGuardada(true);
+        }
+      } catch {
+        setErrorGuardada("No pudimos actualizar tus promociones guardadas.");
+      }
     }
 
     return (
@@ -88,9 +117,17 @@ export default function DetallePromocion() {
             {new Date(promo.hasta).toLocaleDateString("es-AR")}
           </Text>
 
+          <Pressable style={estilos.botonSecundario} onPress={alternarGuardada}>
+            <Text style={estilos.textoSecundario}>
+              {guardada ? "Quitar de guardadas" : "Guardar promoción"}
+            </Text>
+          </Pressable>
+          {errorGuardada && <Text style={estilos.errorCodigo}>{errorGuardada}</Text>}
+
           {uso ? (
             <View style={estilos.cajaCodigo}>
               <Text>Mostrá este código en el comercio</Text>
+              <CodigoQr valor={uso.codigo} />
               <Text style={estilos.codigo}>{uso.codigo}</Text>
             </View>
           ) : (
@@ -112,15 +149,18 @@ const estilos = StyleSheet.create({
   centro: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   mensaje: { fontSize: 16, textAlign: "center", marginTop: 12 },
   contenido: { padding: 16, gap: 8 },
-  titulo: { fontSize: 22, fontWeight: "700" },
+  titulo: { fontSize: 22, fontWeight: "700", textAlign: "center" },
   comercio: { fontSize: 16, opacity: 0.8 },
-  descuento: { fontSize: 18, fontWeight: "600", color: "#2f95dc" },
-  exclusiva: { fontSize: 13, fontWeight: "600", color: "#d97706" },
+  descuento: { fontSize: 18, fontWeight: "600", color: "#069f25" },
+  exclusiva: { fontSize: 13, fontWeight: "600", color: "#d86705" },
   subtitulo: { fontSize: 16, fontWeight: "600", marginTop: 12 },
   fecha: { fontSize: 13, opacity: 0.7, marginTop: 8 },
-  boton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: "#2f95dc", alignItems: "center" },
+  boton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: "#0a8d3e", alignItems: "center" },
   textoBoton: { color: "#fff", fontWeight: "600" },
   cajaCodigo: { marginTop: 16, padding: 16, borderRadius: 10, borderWidth: 1, borderColor: "#8885", alignItems: "center", gap: 8 },
   codigo: { fontSize: 24, fontWeight: "700", letterSpacing: 2 },
   errorCodigo: { color: "#dc2626", marginTop: 8 },
+  botonSecundario: {marginTop: 16, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: "#2f95dc", alignItems: "center"},
+  textoSecundario: { color: "#2f95dc", fontWeight: "600" },
 });
+
