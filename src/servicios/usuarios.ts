@@ -1,4 +1,3 @@
-import { usuariosMock, credencialesMock } from "../mocks/usuarios";
 import { Respuesta, CuerpoDeError } from "../tipos";
 import { Usuario } from "../tipos";
 import { demora, Fallo } from "./resenas";
@@ -9,17 +8,14 @@ export interface SesionIniciada{
     token: string;
 }
 
-let usuarios: Usuario[]=[...usuariosMock]
-const credenciales: Record<string, string>={...credencialesMock}
+type ResultadoUser=Respuesta<Usuario>|CuerpoDeError
 
 const normalizarEmail=(email:string)=>email.trim().toLowerCase();
-
-const crearToken=(usuarioId:string)=>`token-${usuarioId}`;
 
 export async function iniciarSesion(email:string, password:string){
     return traerDato<SesionIniciada>("/auth/ingreso", {
         metodo:"POST",
-        cuerpo: {email: email.trim().toLowerCase(), contrasena: password},
+        cuerpo: {email: normalizarEmail(email), contrasena: password},
     })
 }
 
@@ -28,37 +24,22 @@ export async function registrarse(entrada:{nombre:string, email:string, password
     Promise<Respuesta<SesionIniciada>|CuerpoDeError>{
         await demora();
 
+        //chequeo comun para decirle al usuario
         const nombre=entrada.nombre.trim();
-        const correo=normalizarEmail(entrada.email);
-
         if(nombre.length===0){
             return Fallo("NOMBRE_VACIO", "Tienes que escribir el nombre");
         }
-        if(!correo.includes("@")||!correo.includes(".")){
-            return Fallo("EMAIL_INVALIDO", "Email no es valido")
-        }
-        if(entrada.password.length<6){
-            return Fallo("CONTRASEÑA_CORTA", "Contraseña mas de 6 caracteres")
-        }
-        if(usuarios.some((u)=>u.email===correo)){
-            return Fallo("EMAIL_EXISTENTE", "El email esta registrado")
+        if(entrada.password.length<8){
+            return Fallo("CONTRASEÑA_CORTA", "Contraseña mas de 8 caracteres")
         }
 
-        const nuevo:Usuario={
-            id:`usr-${Date.now()}`,
-            nombre,
-            email:correo, 
-            rol:"vecino",
-            comercioId:null, 
-            favoritos:[], 
-            rubrosDeInteres:[],
-            avisosActivos:true,
-        }
-
-        usuarios=[...usuarios, nuevo];
-        credenciales[correo]=entrada.password;
-
-        return{datos:{usuario:nuevo, token:crearToken(nuevo.id)}, meta:null}
+        return traerDato<SesionIniciada>("/auth/registro",{
+            metodo:"POST",
+            cuerpo:{
+                nombre, 
+                email:normalizarEmail(entrada.email), contrasena: entrada.password
+            }
+        });
     }
 
 
@@ -71,33 +52,40 @@ export async function obtenerUsuarioActual(){
     return traerDato<Usuario>("/yo")
 }
 
-function actualizarUsuario(id:string, cambiar:(u:Usuario)=>Usuario):
-    Respuesta<Usuario>|CuerpoDeError{
-        const actual=usuarios.find((u)=>u.id===id);
-        if(!actual){
-            return Fallo("USUARIO_NO_ENCONTRADO", "Usuario no existe");
-        }
-        const nuevo=cambiar(actual);
-        usuarios=usuarios.map((u)=>(u.id===id?nuevo:u));
-        return{datos:nuevo, meta:null}
-    }
-
-export async function alternarFavoritos(usuarioId:string, comercioId:string):
-    Promise<Respuesta<Usuario>|CuerpoDeError>{
-        await demora(150)
-        return actualizarUsuario(usuarioId, (u)=>({...u, favoritos:u.favoritos.includes(comercioId)?u.favoritos.filter((f)=>f!=comercioId):[...u.favoritos, comercioId]}))
-    }
-
-export async function guardarRubrosDeInteres(usuarioId: string, rubroIds: string[]): Promise<Respuesta<Usuario> | CuerpoDeError> {
-    await demora(150);
-    return actualizarUsuario(usuarioId, (u) => ({
-    ...u,
-    rubrosDeInteres: [...new Set(rubroIds)], // sin repetidos
-    }));
+function agregarFavorito(comercioId:string){
+    return traerDato<Usuario>(`/yo/favoritos/${comercioId}`, {metodo: "PUT"})
 }
 
-export async function activarAvisos(usuarioId:string, activos: boolean): Promise<Respuesta<Usuario>|CuerpoDeError>{
+async function quitarFavorito(comercioId:string):
+    Promise<ResultadoUser>{
+        const r=await traerDato<null>(`/yo/favoritos/${comercioId}`,{metodo:"DELETE"});
+        if("error" in r) return r
+        //DELETE no devuelve usuario. Se pide nuevamente
+        return obtenerUsuarioActual()
+    }
+    
+export async function alternarFavoritos(comercioId:string,  esFavoritoNow: boolean):
+    Promise<Respuesta<Usuario>|CuerpoDeError>{
+            await demora(150)
+            return esFavoritoNow ? quitarFavorito(comercioId) : agregarFavorito(comercioId)
+    }
+
+
+
+
+export async function guardarRubrosDeInteres(rubroIds: string[]){
     await demora(150);
-    return actualizarUsuario(usuarioId, (u)=>({...u, avisosActivos:activos}))
+    return traerDato<Usuario>("/yo", {
+        metodo: "PATCH",
+        cuerpo:{rubrosDeInteres:[...new Set(rubroIds)]}
+    })
+}
+
+export async function activarAvisos(activos: boolean){
+    await demora(150);
+    return traerDato<Usuario>("/yo", {
+        metodo:"PATCH",
+        cuerpo:{avisosActivos:activos}
+    })
 }
 

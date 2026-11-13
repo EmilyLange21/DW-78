@@ -40,7 +40,7 @@ export default function Usuarios(){
     }
 
     async function crearCuenta(){
-        const r=await registrarse({nombre:"Nuevo vecino", email:"Vecino@mail.com",password:"789456"});
+        const r=await registrarse({nombre:"Nuevo vecino", email:"Vecino@mail.com",password:"demo1235"});
         mostrar(r)
         if(!("error" in r)){
             setUsuario(r.datos.usuario)
@@ -49,7 +49,7 @@ export default function Usuarios(){
     }
 
     async function registrarEmailRepetido() {
-        mostrar(await registrarse({ nombre: "X", email: "marta@mail.com", password: "123456" }));
+        mostrar(await registrarse({ nombre: "X", email: "marta@mail.com", password: "demo1234" }));
         }
 
     async function cambiar(
@@ -63,7 +63,7 @@ export default function Usuarios(){
 
     return(
         <ScrollView contentContainerStyle={{padding:16, paddingTop:60}}>
-            <Button title="Entrar como marta" onPress={()=>entrar("marta@mail.com", "123456")}/>
+            <Button title="Entrar como marta" onPress={()=>entrar("marta@mail.com", "demo1234")}/>
             <Button title="Entrar con contraseña mala (debe fallar)" onPress={()=> entrar("marta@mail.com", "mala")}/>
             <Button title="Crear cuenta nueva" onPress={crearCuenta} />
             <Button title="Registrar email repetido (debe fallar)" onPress={registrarEmailRepetido} />
@@ -71,20 +71,20 @@ export default function Usuarios(){
         {usuario && (
         <>
         <Button
-            title="Alternar favorito com-200"
-            onPress={() => cambiar(() => alternarFavoritos(usuario.id, "com-200"))}
+            title="Alternar favorito com-104"
+            onPress={() => cambiar(() => alternarFavoritos("com-104", usuario.favoritos.includes("com-104")))}
         />
         <Button
             title="Rubros: gastronomía y hogar"
             onPress={() =>
                 cambiar(() =>
-                guardarRubrosDeInteres(usuario.id, ["rub-gastronomia", "rub-hogar", "rub-hogar"])
+                guardarRubrosDeInteres(["rub-gastronomia", "rub-ferreteria", "rub-libreria"])
                 )
             }
         />
         <Button
             title="Alternar avisos"
-            onPress={() => cambiar(() => activarAvisos(usuario.id, !usuario.avisosActivos))}
+            onPress={() => cambiar(() => activarAvisos(!usuario.avisosActivos))}
         />
         </>
     )}
