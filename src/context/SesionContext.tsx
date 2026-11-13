@@ -2,8 +2,8 @@ import * as SecureStore from "expo-secure-store"
 import { createContext, ReactNode, useContext, useEffect, useState } from "react"
 import { iniciarSesion, registrarse, cerrarSesion, obtenerUsuarioActual } from "../servicios/usuarios"
 import { Usuario } from "../tipos/usuario"
+import { CLAVE_TOKEN } from "../servicios/http"
 
-const CLAVE_TOKEN="token-sesion";
 console.log("SesionContext cargado");
 
 interface ValorSesion{
@@ -28,9 +28,11 @@ export function SesionProvider({children}:{children: ReactNode}){
             try{
                 const guardado=await SecureStore.getItemAsync(CLAVE_TOKEN);
                 if(guardado){
-                    const r = await obtenerUsuarioActual(guardado);
+                    const r = await obtenerUsuarioActual();
                     if("error" in r){
-                        await SecureStore.deleteItemAsync(CLAVE_TOKEN)
+                        if(r.error.codigo==="NO_AUTENTICADO"){
+                            await SecureStore.deleteItemAsync(CLAVE_TOKEN)
+                        }
                     } else{
                         setUsuario(r.datos)
                         setToken(guardado)

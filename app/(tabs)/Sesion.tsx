@@ -11,7 +11,7 @@ export default function Sesion(){
     }
 
     async function Entrar(){
-        const error=await ingresar("marta@mail.com", "123456")
+        const error=await ingresar("marta@mail.com", "demo1234")
         setMensaje(error ?? "OK")
     }
 

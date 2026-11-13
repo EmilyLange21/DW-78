@@ -2,6 +2,7 @@ import { usuariosMock, credencialesMock } from "../mocks/usuarios";
 import { Respuesta, CuerpoDeError } from "../tipos";
 import { Usuario } from "../tipos";
 import { demora, Fallo } from "./resenas";
+import { traerDato } from "./http";
 
 export interface SesionIniciada{
     usuario: Usuario;
@@ -15,20 +16,13 @@ const normalizarEmail=(email:string)=>email.trim().toLowerCase();
 
 const crearToken=(usuarioId:string)=>`token-${usuarioId}`;
 
-export async function iniciarSesion(email:string, password:string):
-    Promise<Respuesta<SesionIniciada>|CuerpoDeError>{
-        await demora()
+export async function iniciarSesion(email:string, password:string){
+    return traerDato<SesionIniciada>("/auth/ingreso", {
+        metodo:"POST",
+        cuerpo: {email: email.trim().toLowerCase(), contrasena: password},
+    })
+}
 
-        const correo=normalizarEmail(email);
-        const usuario=usuarios.find((u)=> u.email===correo)
-
-        if(!usuario||credenciales[correo]!== password){
-            return Fallo("CREDENCIALES_INVALIDAS", "Datos Incorrectos")
-        }
-
-        return{datos:{usuario, token: crearToken(usuario.id)},
-            meta: null,};
-    }
 
 export async function registrarse(entrada:{nombre:string, email:string, password:string}):
     Promise<Respuesta<SesionIniciada>|CuerpoDeError>{
@@ -73,16 +67,9 @@ export async function cerrarSesion(): Promise<Respuesta<null>|CuerpoDeError>{
     return{datos:null, meta:null};
 }
 
-export async function obtenerUsuarioActual(token:string):
-    Promise <Respuesta<Usuario>|CuerpoDeError>{
-        await demora()
-
-        const usuario=usuarios.find((u)=>crearToken(u.id)===token);
-        if(!usuario){
-            return Fallo("SESION_TERMINADA","Sesion vencida. Volve a ingresar");
-        }
-        return {datos:usuario, meta:null};
-    }
+export async function obtenerUsuarioActual(){
+    return traerDato<Usuario>("/yo")
+}
 
 function actualizarUsuario(id:string, cambiar:(u:Usuario)=>Usuario):
     Respuesta<Usuario>|CuerpoDeError{
