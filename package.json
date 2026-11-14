@@ -12,6 +12,7 @@
     "expo-haptics": "~57.0.3",
     "expo-linking": "~57.0.14",
     "expo-location": "~57.0.23",
+    "expo-secure-store": "~57.0.4",
     "expo-router": "~57.0.31",
     "expo-splash-screen": "~57.0.11",
     "expo-sqlite": "~57.0.5",

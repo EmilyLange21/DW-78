@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { SQLiteProvider } from 'expo-sqlite';
 import { migrar } from '../src/db/migrar';
 import 'react-native-reanimated';
+import { SesionProvider } from '@/src/context/SesionContext';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -48,13 +49,15 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <SQLiteProvider databaseName="app.db" onInit={migrar}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
-      </ThemeProvider>
-    </SQLiteProvider>
+    <SesionProvider>
+      <SQLiteProvider databaseName="app.db" onInit={migrar}>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </ThemeProvider>
+      </SQLiteProvider>
+    </SesionProvider>
   );
 }
