@@ -1,9 +1,10 @@
 import * as SecureStore from "expo-secure-store"
 import { CuerpoDeError, Respuesta } from "../tipos"
+import { API_URL } from "../config"
 
 export const CLAVE_TOKEN="token-sesion"
 
-const URL_BASE="http://localhost:3000"
+const URL_BASE = API_URL
 
 export async function traerDato<T>(ruta:string, opciones:{metodo?:string; cuerpo?:unknown}={}):
     Promise<Respuesta<T>|CuerpoDeError>{
