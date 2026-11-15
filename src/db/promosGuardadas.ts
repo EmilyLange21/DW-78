@@ -1,8 +1,6 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 import type { Promocion } from "../tipos";
 
-// reemplazar por el id del usuario de la sesión (parte de Axel)
-export const USUARIO_PROVISORIO = "local";
 
 export type PromoGuardada = {
     usuario_id: string;
