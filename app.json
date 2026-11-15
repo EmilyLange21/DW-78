@@ -57,7 +57,8 @@
         }
       ],
       "@react-native-vector-icons/ionicons",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

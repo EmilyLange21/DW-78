@@ -1,16 +1,51 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Link } from "expo-router";
+import { Button, ScrollView, Text, ActivityIndicator, Switch, View } from "react-native";
+import { useSesion } from "@/src/context/SesionContext";
+import { activarAvisos } from "@/src/servicios/usuarios";
 
-export default function Pantalla() {
-  return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.titulo}>Yo</Text>
-      <Text style={estilos.texto}>Cuenta, favoritos y avisos.</Text>
-    </View>
-  );
+export default function Yo(){
+    const {usuario, cargando, salir, actualizarUsuario}=useSesion();
+    const [mensaje, setMensaje]=useState<string|null>(null)
+
+    if(cargando){
+        return <ActivityIndicator size="large" style={{marginTop:100}}/>
+    }
+
+    if(!usuario){
+        return(
+            <View>
+                <Text>Ingresá para guardar tus comercios favoritos, escribir reseñas y usar promosiones.</Text>
+                <Link href="/login">Ingresar</Link>
+                <Link href="/registro">Crear cuenta</Link>
+            </View>
+        )
+    }
+
+    async function cambiarAvisos(valor:boolean){
+        setMensaje(null);
+        const r = await activarAvisos(valor)
+        if("error" in r) setMensaje(r.error.mensaje)
+        else actualizarUsuario(r.datos)
+    }
+
+    return(
+        <ScrollView contentContainerStyle={{padding:16, gap:12}}>
+            <Text>Hola, {usuario.nombre}</Text>
+            <Text>{usuario.email}</Text>
+
+            <View style={{flexDirection:"row", alignItems:"center", gap:8}}>
+                <Text>Recibir Avisos</Text>
+                <Switch value={usuario.avisosActivos} onValueChange={cambiarAvisos}/>
+            </View>
+        
+            {mensaje !== null && <Text style={{color:"red"}}>{mensaje}</Text>}
+
+            <Text>Favoritos: {usuario.favoritos.length} </Text>
+            <Text>Rubros de Interés: {usuario.rubrosDeInteres.length} </Text>
+
+            <Button title="Salir" onPress={salir}/>
+        </ScrollView>
+    )
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  titulo: { fontSize: 22, fontWeight: "600", marginBottom: 8 },
-  texto: { fontSize: 15, textAlign: "center", opacity: 0.7 },
-});
