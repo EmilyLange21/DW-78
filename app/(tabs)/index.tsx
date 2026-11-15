@@ -1,3 +1,5 @@
+
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -20,7 +22,6 @@ import type { Comercio, Horario, Rubro } from "../../src/tipos";
 // Comprueba si un comercio está abierto según sus horarios.
 function estaAbierto(horarios: Horario[]) {
   const ahora = new Date();
-
   const diaActual = ahora.getDay();
   const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
 
@@ -36,17 +37,14 @@ function estaAbierto(horarios: Horario[]) {
     const apertura = horaApertura * 60 + minutoApertura;
     const cierre = horaCierre * 60 + minutoCierre;
 
-    // Horarios que comienzan y terminan el mismo día.
     if (horario.dia === diaActual && cierre > apertura) {
       return horaActual >= apertura && horaActual < cierre;
     }
 
-    // Horarios que terminan después de medianoche.
     if (horario.dia === diaActual && cierre < apertura) {
       return horaActual >= apertura;
     }
 
-    // Comprueba si el horario del día anterior continúa abierto.
     const diaAnterior = (diaActual + 6) % 7;
 
     if (
@@ -62,6 +60,8 @@ function estaAbierto(horarios: Horario[]) {
 }
 
 export default function Pantalla() {
+  const router = useRouter();
+
   const [comercios, setComercios] = useState<Comercio[]>([]);
   const [rubros, setRubros] = useState<Rubro[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -69,6 +69,7 @@ export default function Pantalla() {
   const [busqueda, setBusqueda] = useState("");
   const [rubroSeleccionado, setRubroSeleccionado] = useState("");
   const [soloAbiertos, setSoloAbiertos] = useState(false);
+  const [orden, setOrden] = useState<"nombre" | "puntaje">("nombre");
 
   // Carga los comercios y los rubros desde la API.
   useEffect(() => {
@@ -95,26 +96,34 @@ export default function Pantalla() {
     cargarDatos();
   }, []);
 
-  // Aplica la busqueda y los filtros seleccionados.
-  const comerciosFiltrados = comercios.filter((comercio) => {
-    const coincideNombre = comercio.nombre
-      .toLowerCase()
-      .includes(busqueda.trim().toLowerCase());
+  // Aplica la búsqueda y los filtros seleccionados.
+  const comerciosFiltrados = comercios
+    .filter((comercio) => {
+      const coincideNombre = comercio.nombre
+        .toLowerCase()
+        .includes(busqueda.trim().toLowerCase());
 
-    const coincideRubro =
-      rubroSeleccionado === "" ||
-      comercio.rubroId === rubroSeleccionado;
+      const coincideRubro =
+        rubroSeleccionado === "" ||
+        comercio.rubroId === rubroSeleccionado;
 
-    const coincideAbierto =
-      !soloAbiertos || estaAbierto(comercio.horarios);
+      const coincideAbierto =
+        !soloAbiertos || estaAbierto(comercio.horarios);
 
-    return coincideNombre && coincideRubro && coincideAbierto;
-  });
+      return coincideNombre && coincideRubro && coincideAbierto;
+    })
+    .sort((a, b) => {
+      if (orden === "nombre") {
+        return a.nombre.localeCompare(b.nombre);
+      }
+
+      return b.puntaje - a.puntaje;
+    });
 
   if (cargando) {
     return (
       <View style={estilos.centrado}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#333333" />
         <Text style={estilos.texto}>Cargando comercios...</Text>
       </View>
     );
@@ -203,40 +212,68 @@ export default function Pantalla() {
         ))}
       </ScrollView>
 
+      <Pressable
+        style={estilos.botonOrden}
+        onPress={() =>
+          setOrden(orden === "nombre" ? "puntaje" : "nombre")
+        }
+      >
+        <Text style={estilos.textoOrden}>
+          Ordenar: {orden === "nombre" ? "Nombre A-Z" : "Mayor puntaje"}
+        </Text>
+      </Pressable>
+
       <FlatList
         data={comerciosFiltrados}
         keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <Text style={estilos.texto}>
             No se encontraron comercios.
           </Text>
         }
-        renderItem={({ item }) => (
-          <View style={estilos.tarjeta}>
-            <Text style={estilos.nombre}>{item.nombre}</Text>
-            <Text
-  style={{
-    color: estaAbierto(item.horarios) ? "#218838" : "#cc3333",
-    fontWeight: "bold",
-    marginBottom: 5,
-  }}
->
-  {estaAbierto(item.horarios) ? "ABIERTO" : "CERRADO"}
-</Text>
+        renderItem={({ item }) => {
+          const abierto = estaAbierto(item.horarios);
 
-            <Text style={estilos.descripcion}>
-              {item.descripcion}
-            </Text>
+          return (
+            <Pressable
+              style={estilos.tarjeta}
+              onPress={() =>
+                router.push({
+                  pathname: "/comercio/[id]",
+                  params: { id: item.id },
+                })
+              }
+            >
+              <Text style={estilos.nombre}>{item.nombre}</Text>
 
-            <Text style={estilos.descripcion}>
-              Dirección: {item.direccion}
-            </Text>
+              <Text
+                style={[
+                  estilos.estado,
+                  { color: abierto ? "#218838" : "#cc3333" },
+                ]}
+              >
+                {abierto ? "ABIERTO" : "CERRADO"}
+              </Text>
 
-            <Text style={estilos.descripcion}>
-              Puntaje: {item.puntaje} ({item.cantidadResenas} reseñas)
-            </Text>
-          </View>
-        )}
+              <Text style={estilos.descripcion}>
+                {item.descripcion}
+              </Text>
+
+              <Text style={estilos.descripcion}>
+                Dirección: {item.direccion}
+              </Text>
+
+              <Text style={estilos.descripcion}>
+                Puntaje: {item.puntaje} ({item.cantidadResenas} reseñas)
+              </Text>
+
+              <Text style={estilos.verDetalle}>
+                Ver información del comercio →
+              </Text>
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
@@ -300,7 +337,7 @@ const estilos = StyleSheet.create({
   listaRubros: {
     minHeight: 50,
     maxHeight: 55,
-    marginBottom: 20,
+    marginBottom: 10,
     flexGrow: 0,
   },
   botonRubro: {
@@ -322,6 +359,18 @@ const estilos = StyleSheet.create({
   textoRubroActivo: {
     color: "#ffffff",
   },
+  botonOrden: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#eeeeee",
+    marginBottom: 12,
+  },
+  textoOrden: {
+    color: "#333333",
+    fontWeight: "600",
+  },
   texto: {
     fontSize: 16,
     color: "#000000",
@@ -338,9 +387,18 @@ const estilos = StyleSheet.create({
     marginBottom: 5,
     color: "#000000",
   },
+  estado: {
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
   descripcion: {
     fontSize: 14,
     marginBottom: 3,
     color: "#000000",
+  },
+  verDetalle: {
+    marginTop: 10,
+    color: "#2457a7",
+    fontWeight: "bold",
   },
 });
