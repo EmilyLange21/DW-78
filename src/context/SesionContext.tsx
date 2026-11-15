@@ -3,6 +3,9 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import { iniciarSesion, registrarse, cerrarSesion, obtenerUsuarioActual } from "../servicios/usuarios"
 import { Usuario } from "../tipos/usuario"
 import { CLAVE_TOKEN } from "../servicios/http"
+import { configurarProveedorToken } from "../servicios/api"
+
+configurarProveedorToken(() => SecureStore.getItemAsync(CLAVE_TOKEN))
 
 console.log("SesionContext cargado");
 

@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet } from "
 import { Text, View } from "../../components/Themed";
 import { listarRubros } from "../../src/servicios/comercios";
 import { listarPromociones, type EstadoPromos } from "../../src/servicios/promociones";
+import { useSesion } from "../../src/context/SesionContext";
 import type { Promocion, Rubro } from "../../src/tipos";
 
 const OPCIONES_ESTADO: { valor: EstadoPromos; etiqueta: string }[] = [
@@ -21,7 +22,8 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 }
 
 export default function PantallaPromos() {
-  const esComercio = true; // reemplazar por el rol de la sesión (parte de Axel)
+  const { usuario } = useSesion();
+  const esComercio = usuario?.rol === "comercio";
   const [estado, setEstado] = useState<EstadoPromos>("vigentes");
   const [promos, setPromos] = useState<Promocion[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -30,6 +32,10 @@ export default function PantallaPromos() {
   const [rubroId, setRubroId] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
+    if (esComercio) {
+      setCargando(false);
+      return;
+    }
     setCargando(true);
     setError(null);
     try {
@@ -40,7 +46,7 @@ export default function PantallaPromos() {
     } finally {
       setCargando(false);
     }
-  }, [estado, rubroId]);
+  }, [estado, rubroId, esComercio]);
 
   useEffect(() => {
     cargar();
@@ -52,27 +58,33 @@ export default function PantallaPromos() {
       .catch(() => setRubros([]));
   }, []);
 
+  if (esComercio) {
+    return (
+    <View style={estilos.pantalla}>
+        <Pressable style={estilos.botonComercio} onPress={() => router.push("/validar")}>
+          <Text style={estilos.textoBotonComercio}>Escanear código de cliente</Text>
+        </Pressable>
+
+        <Pressable style={estilos.botonComercio} onPress={() => router.push("/mis-promos")}>
+          <Text style={estilos.textoBotonComercio}>Administrar mis promociones</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View style={estilos.pantalla}>
-      {esComercio && (                                                        
-        <Pressable style={estilos.botonComercio} onPress={() => router.push("/validar")}>
-          <Text style={estilos.textoBoton}>Escanear código de cliente</Text>
+      {!esComercio && (
+        <Pressable style={estilos.botonGuardadas} onPress={() => router.push("/guardadas")}>
+          <Text style={estilos.textoGuardadas}>Mis promociones guardadas</Text>
         </Pressable>
       )}
 
-      {esComercio && (
-        <Pressable style={estilos.botonComercio} onPress={() => router.push("/mis-promos")}>
-          <Text style={estilos.textoBoton}>Administrar mis promociones</Text>
+      {!esComercio && (
+        <Pressable style={estilos.botonGuardadas} onPress={() => router.push("/mis-codigos")}>
+          <Text style={estilos.textoGuardadas}>Mis códigos</Text>
         </Pressable>
       )}
-
-      <Pressable style={estilos.botonGuardadas} onPress={() => router.push("/guardadas")}>
-        <Text style={estilos.textoGuardadas}>Mis promociones guardadas</Text>
-      </Pressable>
-
-      <Pressable style={estilos.botonGuardadas} onPress={() => router.push("/mis-codigos")}>
-        <Text style={estilos.textoGuardadas}>Mis códigos</Text>
-      </Pressable>
 
       <View style={estilos.filtros}>
         {OPCIONES_ESTADO.map((opcion) => (
@@ -154,7 +166,8 @@ const estilos = StyleSheet.create({
   pantalla: { flex: 1 },
   filtros: { flexDirection: "row", gap: 8, padding: 12 },
   filaRubros: { flexGrow: 0, flexShrink: 0 },
-  botonComercio: { marginHorizontal: 12, marginTop: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: "#05a342", alignItems: "center"},
+  botonComercio: { marginHorizontal: 12, marginTop: 12, paddingVertical: 20, borderRadius: 8, backgroundColor: "#05a342", alignItems: "center"},
+  textoBotonComercio: { color: "#fff", fontWeight: "700", fontSize: 18 },
   chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#8885" },
   chipActivo: { backgroundColor: "#2f95dc", borderColor: "#2f95dc" },
   textoChip: { fontSize: 14 },

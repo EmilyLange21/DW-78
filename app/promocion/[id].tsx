@@ -3,16 +3,19 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-native";
 import { Text, View } from "../../components/Themed";
 import { obtenerComercio } from "../../src/servicios/comercios";
-import { generarCodigo, obtenerPromocion } from "../../src/servicios/promociones";
+import { darDeBajaPromocion, generarCodigo, obtenerPromocion } from "../../src/servicios/promociones";
 import CodigoQr from "../../src/componentes/CodigoQr";
 import type { Comercio, Promocion, UsoDePromocion } from "../../src/tipos";
 import { useSQLiteContext } from "expo-sqlite";
-import { estaGuardada, guardarPromo, quitarPromo, USUARIO_PROVISORIO } from "../../src/db/promosGuardadas";
+import { estaGuardada, guardarPromo, quitarPromo } from "../../src/db/promosGuardadas";
+import { useSesion } from "../../src/context/SesionContext";
 
 
 export default function DetallePromocion() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const db = useSQLiteContext();
+    const { usuario } = useSesion();
+    const esComercio = usuario?.rol === "comercio";
     const [guardada, setGuardada] = useState(false);
     const [errorGuardada, setErrorGuardada] = useState<string | null>(null);
     const [promo, setPromo] = useState<Promocion | null>(null);
@@ -44,10 +47,14 @@ export default function DetallePromocion() {
     }, [cargar]);
 
     useEffect(() => {
-      estaGuardada(db, USUARIO_PROVISORIO, id)
+      if (!usuario) {
+        setGuardada(false);
+        return;
+      }
+      estaGuardada(db, usuario.id, id)
       .then(setGuardada)
       .catch(() => setGuardada(false));
-    }, [db, id]);
+    }, [db, id, usuario]);
 
     async function pedirCodigo() {
         if (!promo) return;
@@ -65,14 +72,18 @@ export default function DetallePromocion() {
 
     async function alternarGuardada() {
       if (!promo) return;
+      if (!usuario) {
+        setErrorGuardada("Ingresá a tu cuenta para guardar promociones.");
+        return;
+      }
       setErrorGuardada(null);
 
       try {
         if (guardada) {
-          await quitarPromo(db, USUARIO_PROVISORIO, promo.id);
+          await quitarPromo(db, usuario.id, promo.id);
           setGuardada(false);
         } else {
-          await guardarPromo(db, USUARIO_PROVISORIO, promo);
+          await guardarPromo(db, usuario.id, promo);
           setGuardada(true);
         }
       } catch {
@@ -117,14 +128,17 @@ export default function DetallePromocion() {
             {new Date(promo.hasta).toLocaleDateString("es-AR")}
           </Text>
 
-          <Pressable style={estilos.botonSecundario} onPress={alternarGuardada}>
-            <Text style={estilos.textoSecundario}>
-              {guardada ? "Quitar de guardadas" : "Guardar promoción"}
-            </Text>
-          </Pressable>
+          {!esComercio && (
+            <Pressable style={estilos.botonSecundario} onPress={alternarGuardada}>
+              <Text style={estilos.textoSecundario}>
+                {guardada ? "Quitar de guardadas" : "Guardar promoción"}
+              </Text>
+            </Pressable>
+          )}
+
           {errorGuardada && <Text style={estilos.errorCodigo}>{errorGuardada}</Text>}
 
-          {uso ? (
+          {esComercio ? null : uso ? (
             <View style={estilos.cajaCodigo}>
               <Text>Mostrá este código en el comercio</Text>
               <CodigoQr valor={uso.codigo} />

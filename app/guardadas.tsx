@@ -3,22 +3,29 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet } from "react-native";
 import { Text, View } from "../components/Themed";
-import { listarGuardadas, USUARIO_PROVISORIO, type PromoGuardada } from "../src/db/promosGuardadas";
+import { listarGuardadas, type PromoGuardada } from "../src/db/promosGuardadas";
+import { useSesion } from "../src/context/SesionContext";
 
 export default function promosGuardadas() {
     const db = useSQLiteContext();
+    const { usuario } = useSesion();
     const [promos, setPromos] = useState<PromoGuardada[]>([]);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useFocusEffect(
-        useCallback(() => {
-            setError(null);
-            listarGuardadas(db, USUARIO_PROVISORIO)
-            .then(setPromos)
-            .catch(() => setError("No pudimos leer tus promociones guardadas."))
-            .finally(() => setCargando(false));
-        }, [db]),
+      useCallback(() => {
+        if(!usuario) {
+          setPromos([]);
+          setCargando(false);
+          return;
+        }
+        setError(null);
+        listarGuardadas(db, usuario.id)
+          .then(setPromos)
+          .catch(() => setError("No pudimos leer tus promociones guardadas."))
+          .finally(() => setCargando(false));
+      }, [db, usuario]),
     );
 
 
@@ -43,7 +50,11 @@ export default function promosGuardadas() {
           keyExtractor={(promo) => promo.id}
           contentContainerStyle={estilos.lista}
           ListEmptyComponent={
-            <Text style={estilos.mensaje}>Todavía no guardaste ninguna promoción.</Text>
+            <Text style={estilos.mensaje}>
+              {usuario
+                ? "Todavía no guardaste ninguna promoción."
+                : "Ingresá a tu cuenta para ver tus promociones guardadas."}
+            </Text>
           }
           renderItem={({ item }) => {
             const vencida = new Date(item.hasta) < new Date();
