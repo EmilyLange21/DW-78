@@ -17,7 +17,6 @@ export default function LayoutDePestanas() {
       <Tabs.Screen name="index" options={{ title: "Buscar", tabBarIcon: icono("search-outline") }} />
       <Tabs.Screen name="promos" options={{ title: "Promos", tabBarIcon: icono("pricetag-outline") }} />
       <Tabs.Screen name="mapa" options={{ title: "Mapa", tabBarIcon: icono("map-outline") }} />
-      <Tabs.Screen name="resenas" options={{ title: "Reseñas", tabBarIcon: icono("star-outline") }} />
       <Tabs.Screen name="yo" options={{ title: "Yo", tabBarIcon: icono("person-outline") }} />
     </Tabs>
   );
