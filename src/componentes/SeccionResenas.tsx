@@ -1,24 +1,27 @@
 import { Text, View } from "@/components/Themed";
 import Estrellas from "@/src/componentes/Estrellas";
 import FormularioResena from "@/src/componentes/FormResena";
+import FormularioRespuesta from "./FormRespuesta";
 import TarjetaResena from "@/src/componentes/TarjetaResena";
 import { useSesion } from "@/src/context/SesionContext";
-import {crearResena,editarResena,eliminaResena,obtenerResenas,reportarResena,
+import {crearResena,editarResena,eliminaResena,obtenerResenas,reportarResena, responderResena,
 } from "@/src/servicios/resenas";
 import { Resena } from "@/src/tipos/resena";
 import { Link } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 
 export default function SeccionResenas({ comercioId }: { comercioId: string }) {
     const { usuario } = useSesion();
     const Yo = usuario?.id ?? "";
+    const esMiComercio = usuario?.rol === "comercio" && usuario.comercioId === comercioId;
 
     const [resenas, setResenas] = useState<Resena[]>([]);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [mensaje, setMensaje] = useState<string | null>(null);
     const [editandoId, setEditandoId] = useState<string | null>(null);
+    const [respondiendoId, setRespondiendoId] = useState<string | null>(null);
 
     async function recargar() {
         const r = await obtenerResenas(comercioId);
@@ -100,29 +103,43 @@ export default function SeccionResenas({ comercioId }: { comercioId: string }) {
         )}
 
         {resenas.map((r) =>
-            editandoId === r.id ? (
+        editandoId === r.id ? (
             <FormularioResena
-                key={r.id}
-                inicial={{ estrellas: r.estrellas, comentario: r.comentario }}
-                textoBoton="Guardar cambios"
-                onEnviar={async (estrellas, comentario) => {
+            key={r.id}
+            inicial={{ estrellas: r.estrellas, comentario: r.comentario }}
+            textoBoton="Guardar cambios"
+            onEnviar={async (estrellas, comentario) => {
                 const res = await editarResena(r.id, { estrellas, comentario });
                 if ("error" in res) return res.error.mensaje;
                 setEditandoId(null);
                 await recargar();
                 return null;
-                }}
-                onCancelar={() => setEditandoId(null)}
+            }}
+            onCancelar={() => setEditandoId(null)}
             />
-            ) : (
+        ) : (
+            <Fragment key={r.id}>
             <TarjetaResena
-                key={r.id}
                 resena={r}
                 onEditar={r.usuarioId === Yo ? () => setEditandoId(r.id) : undefined}
                 onBorrar={r.usuarioId === Yo ? () => borrar(r.id) : undefined}
                 onReportar={usuario && r.usuarioId !== Yo ? () => reportar(r.id) : undefined}
+                onResponder={esMiComercio ? () => setRespondiendoId(r.id) : undefined}
             />
-            )
+            {respondiendoId === r.id && (
+                <FormularioRespuesta
+                onEnviar={async (texto) => {
+                    const res = await responderResena(r.id, texto);
+                    if ("error" in res) return res.error.mensaje;
+                    setRespondiendoId(null);
+                    await recargar();
+                    return null;
+                }}
+                onCancelar={() => setRespondiendoId(null)}
+                />
+            )}
+            </Fragment>
+        )
         )}
         </View>
     );
