@@ -16,6 +16,8 @@ import { API_URL } from "../../src/config";
 import { obtenerComercio } from "../../src/servicios/comercios";
 import type { Comercio } from "../../src/tipos";
 
+import SeccionResenas from "@/src/componentes/SeccionResenas";
+
 export default function DetalleComercio() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -235,6 +237,9 @@ export default function DetalleComercio() {
           />
         </View>
       )}
+
+      <Text style={estilos.titulo}>📝 Reseñas</Text>
+      <SeccionResenas comercioId={datosComercio.id} />
 
       <View style={{ height: 40 }} />
     </ScrollView>

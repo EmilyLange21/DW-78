@@ -1,110 +1,141 @@
-import { useEffect, useState } from "react";
-import { ScrollView, Text, View, Button } from "react-native";
-import { obtenerResenas, crearResena, editarResena, eliminaResena, reportarResena, responderResena } from "@/src/servicios/resenas";
-import { Resena } from "@/src/tipos/resena";
-import { Respuesta, CuerpoDeError } from "@/src/tipos";
+import { Text, View } from "@/components/Themed";
+import FormularioResena from "@/src/componentes/FormResena";
+import Estrellas from "@/src/componentes/Estrellas";
+import TarjetaResena from "@/src/componentes/TarjetaResena";
 import { useSesion } from "@/src/context/SesionContext";
+import {crearResena,editarResena,eliminaResena,obtenerResenas,reportarResena,
+} from "@/src/servicios/resenas";
+import { Resena } from "@/src/tipos/resena";
+import { Link } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-native";
 
+const COMERCIO = "com-118";
 
-const comercio="com-118"
+export default function Resenas() {
+    const { usuario } = useSesion();
+    const Yo = usuario?.id ?? "";
 
-export default function PruebaResenas(){
+    const [resenas, setResenas] = useState<Resena[]>([]);
+    const [cargando, setCargando] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [mensaje, setMensaje] = useState<string | null>(null);
+    const [editandoId, setEditandoId] = useState<string | null>(null);
 
-    const {usuario}=useSesion()
-    const Yo= usuario?.id??"";
-
-    const [resenas, setResenas]= useState<Resena[]>([])
-    const [mensaje, setMensaje]= useState("")
-
-    async function Recargar() {
-        const respuesta=await obtenerResenas(comercio)
-        if(!("error" in respuesta)) setResenas(respuesta.datos)
+    async function recargar() {
+        const r = await obtenerResenas(COMERCIO);
+        if ("error" in r) setError(r.error.mensaje);
+        else {
+        setError(null);
+        setResenas(r.datos);
+        }
+        setCargando(false);
     }
 
-    useEffect(()=>{
-        Recargar();
-    },[]);
+    useEffect(() => {
+        recargar();
+    }, []);
 
-    function mostrar(r:Respuesta<unknown>|CuerpoDeError){
-        setMensaje("error" in r ? `ERROR ${r.error.codigo}: ${r.error.mensaje}` : "OK")
+    async function borrar(id: string) {
+        setMensaje(null);
+        const r = await eliminaResena(id);
+        if ("error" in r) setMensaje(r.error.mensaje);
+        else await recargar();
     }
 
-    async function crear() {
-        mostrar(
-            await crearResena({comercioId:"com-104", estrellas:4, comentario:"Reseña de prueba"})
-        );
-        await Recargar();
+    async function reportar(id: string) {
+        setMensaje(null);
+        const r = await reportarResena(id);
+        if ("error" in r) setMensaje(r.error.mensaje);
+        else await recargar();
     }
 
-    async function editar(){
-        const mio=resenas.find((r)=> r.usuarioId===Yo);
-        if(!mio) return setMensaje("No tienes reseñas para editar")
-        mostrar(await editarResena(mio.id,{estrellas:3, comentario:"Editada"}));
-        await Recargar()
+    if (cargando) {
+        return <ActivityIndicator size="large" style={{ marginTop: 100 }} />;
     }
 
-    async function editarAjena(){
-        const ajena=resenas.find((r)=> r.usuarioId !== Yo)
-        if(!ajena) return setMensaje("No hay reseñas ajenas")
-        mostrar(await editarResena(ajena.id,{estrellas:1, comentario:"X"}))
-    }
+    const miResena = resenas.find((r) => r.usuarioId === Yo);
+    const promedio =
+        resenas.length > 0 ? resenas.reduce((suma, r) => suma + r.estrellas, 0) / resenas.length : null;
 
-    async function borrar(){
-        const mio=resenas.find((r)=> r.usuarioId===Yo)
-        if (!mio) return setMensaje("No tienes reseñas para borrar")
-        mostrar(await eliminaResena(mio.id));
-        await Recargar()
-    }
+    return (
+        <ScrollView contentContainerStyle={estilos.pantalla}>
+        {promedio !== null && (
+            <View style={estilos.resumen}>
+            <Text style={estilos.promedio}>{promedio.toFixed(1).replace(".", ",")}</Text>
+            <View style={{ gap: 2 }}>
+                <Estrellas valor={promedio} />
+                <Text style={estilos.cantidad}>{resenas.length} reseñas</Text>
+            </View>
+            </View>
+        )}
 
-    async function reportarAjena(){
-        const ajena=resenas.find((r)=> r.usuarioId !== Yo && !r.reportada)
-        if(!ajena) return setMensaje("No hay reseñas ajenas sin reportar")
-        mostrar(await reportarResena(ajena.id));
-        await Recargar()
-    }
+        {!usuario && (
+            <View style={estilos.aviso}>
+            <Text style={estilos.texto}>Ingresá para dejar tu reseña.</Text>
+            <Link href="/login" asChild>
+                <Pressable style={estilos.boton}>
+                <Text style={estilos.textoBoton}>Ingresar</Text>
+                </Pressable>
+            </Link>
+            </View>
+        )}
 
-    async function reportarMio(){
-        const mio=resenas.find((r)=> r.usuarioId===Yo)
-        if(!mio) return setMensaje("No tienes reseñas");
-        mostrar(await reportarResena(mio.id))
-    }
+        {usuario?.rol === "vecino" && !miResena && (
+            <FormularioResena
+            onEnviar={async (estrellas, comentario) => {
+                const r = await crearResena({ comercioId: COMERCIO, estrellas, comentario });
+                if ("error" in r) return r.error.mensaje;
+                await recargar();
+                return null;
+            }}
+            />
+        )}
 
-    async function responderSinRespuesta(){
-        const nada=resenas.find((r)=> r.respuesta===null)
-        if(!nada) return setMensaje("Todas tienen respuesta")
-        mostrar(await responderResena(nada.id, "Gracias por tu opinion"))
-        await Recargar()    }
+        {error !== null && <Text style={estilos.error}>{error}</Text>}
+        {mensaje !== null && <Text style={estilos.error}>{mensaje}</Text>}
 
-    async function responderYaRespondida() {
-        const con = resenas.find((r) => r.respuesta !== null);
-        if (!con) return setMensaje("Ninguna tiene respuesta todavía");
-  mostrar(await responderResena(con.id, "Otra respuesta")); // debe fallar
-}
+        {resenas.length === 0 && error === null && (
+            <Text style={estilos.texto}>Todavía no hay reseñas.</Text>
+        )}
 
-
-
-    return(
-        <ScrollView contentContainerStyle={{padding: 16, paddingTop:60}}>
-            <Button title="Crear Reseña" onPress={crear}/>
-            <Button title="Editar" onPress={editar}/>
-            <Button title="Eliminar" onPress={borrar}/>
-            <Button title="Reportar una ajena" onPress={reportarAjena} />
-            <Button title="Reportar una mía (debe fallar)" onPress={reportarMio} />
-            <Button title="Responder una sin respuesta" onPress={responderSinRespuesta} />
-            <Button title="Responder una ya respondida (debe fallar)" onPress={responderYaRespondida} />
-
-            <Text style={{marginVertical:16}}>Resultado: {mensaje}</Text>
-            
-
-
-            {resenas.map((r)=>(
-                <View key={r.id} style={{marginBottom:16}}>
-                    <Text>{r.estrellas} estrellas (de {r.usuarioId})</Text>
-                    <Text>{r.comentario}</Text>
-                    {r.respuesta!== null && <Text>Respuesta: {r.respuesta}</Text>}
-                    {r.reportada && <Text>⚠ Reportada</Text>}
-                </View>
-            ))}        
+        {resenas.map((r) =>
+            editandoId === r.id ? (
+            <FormularioResena
+                key={r.id}
+                inicial={{ estrellas: r.estrellas, comentario: r.comentario }}
+                textoBoton="Guardar cambios"
+                onEnviar={async (estrellas, comentario) => {
+                const res = await editarResena(r.id, { estrellas, comentario });
+                if ("error" in res) return res.error.mensaje;
+                setEditandoId(null);
+                await recargar();
+                return null;
+                }}
+                onCancelar={() => setEditandoId(null)}
+            />
+            ) : (
+            <TarjetaResena
+                key={r.id}
+                resena={r}
+                onEditar={r.usuarioId === Yo ? () => setEditandoId(r.id) : undefined}
+                onBorrar={r.usuarioId === Yo ? () => borrar(r.id) : undefined}
+                onReportar={usuario && r.usuarioId !== Yo ? () => reportar(r.id) : undefined}
+            />
+            )
+        )}
         </ScrollView>
-    )
+    );
 }
+
+const estilos = StyleSheet.create({
+    pantalla: { padding: 16, gap: 12 },
+    resumen: { flexDirection: "row", alignItems: "center", gap: 12 },
+    promedio: { fontSize: 40, fontWeight: "700" },
+    cantidad: { fontSize: 14, opacity: 0.7 },
+    texto: { fontSize: 16 },
+    error: { fontSize: 16, color: "#cc3333" },
+    aviso: { padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#8885", gap: 10 },
+    boton: { minHeight: 52, borderRadius: 10, backgroundColor: "#2f95dc", alignItems: "center", justifyContent: "center" },
+    textoBoton: { color: "#ffffff", fontSize: 18, fontWeight: "700" },
+    });
